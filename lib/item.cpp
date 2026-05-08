@@ -3,7 +3,10 @@
 namespace conveyor {
 
 Item::Item(ItemId id, ItemType initial_type)
-    : id_(id), current_type_(initial_type), state_(State::QUEUED) {}
+    : id_{id}
+    , current_type_{initial_type}
+    , state_{State::QUEUED}
+{}
 
 ItemId Item::getId() const {
     return id_;

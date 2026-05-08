@@ -14,18 +14,18 @@ public:
 
     explicit Item(ItemId id, ItemType initial_type);
 
-    ItemId getId() const;
+    ItemId   getId() const;
     ItemType getCurrentType() const;
-    State getState() const;
+    State    getState() const;
 
     void setState(State new_state);
     void advanceType();
     bool isCompleted() const;
 
 private:
-    ItemId id_;
+    ItemId   id_;
     ItemType current_type_;
-    State state_;
+    State    state_;
 };
 
 } // namespace conveyor

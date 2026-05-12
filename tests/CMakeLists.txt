@@ -1,11 +1,16 @@
-cmake_minimum_required(VERSION 3.10)
+cmake_minimum_required(VERSION 3.14)
 project(conveyor_tests)
 
-find_package(GTest REQUIRED)
-include_directories(${GTEST_INCLUDE_DIRS})
+include(FetchContent)
+FetchContent_Declare(
+    googletest
+    URL https://github.com/google/googletest/archive/refs/tags/v1.14.0.zip
+)
 
-include_directories(${CMAKE_SOURCE_DIR}/../include)
-link_directories(${CMAKE_SOURCE_DIR}/../build)
+set(gtest_force_shared_crt ON CACHE BOOL "" FORCE)
+FetchContent_MakeAvailable(googletest)
+
+include_directories(${CMAKE_SOURCE_DIR}/include)
 
 add_executable(run_tests
     test_main.cpp
@@ -17,7 +22,7 @@ add_executable(run_tests
 
 target_link_libraries(run_tests
     conv_core
-    ${GTEST_LIBRARIES}
+    gtest_main
     pthread
 )
 

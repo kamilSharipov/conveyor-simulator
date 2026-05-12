@@ -36,6 +36,10 @@ size_t Machine::getQueueSize() const {
 }
 
 Time Machine::calculateWaitTime() const {
+    if (op_times_.empty()) {
+        return 0;
+    }
+
     Time sum = 0;
 
     for (const auto& item : queue_) {
@@ -56,8 +60,9 @@ void Machine::startProcessing(Item* item, Time start_time) {
         };
     }
 
+    Time duration = op_times_.empty() ? 0 : op_times_[item->getCurrentType()];
     current_item_ = item;
-    busy_until_   = start_time + op_times_[item->getCurrentType()];
+    busy_until_   = start_time + duration;
 }
 
 Time Machine::getBusyUntil() const {
@@ -69,6 +74,10 @@ const Item* Machine::getCurrentItem() const {
 }
 
 Time Machine::getProcessingTime(ItemType type) const {
+    if (op_times_.empty()) {
+        return 0;
+    }
+
     return op_times_[type];
 }
 

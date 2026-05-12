@@ -4,6 +4,7 @@
 #include <sstream>
 #include <stdexcept>
 #include <limits>
+#include <iostream>
 
 namespace conveyor {
 
@@ -17,21 +18,17 @@ std::string Parser::readLineSafe(std::istream& is, std::string& original_line) {
     std::string        token;
 
     while (iss >> token) {
-        if (token[0] == '#') {
-            break;
-        }
-
         cleaned += token + " ";
     }
 
     return cleaned;
 }
 
-static std::vector<int> parseNumbers(const std::string& line,
-                                     size_t expected_count,
-                                     int min_val,
-                                     int max_val,
-                                     const std::string& context) {
+std::vector<int> Parser::parseNumbers(const std::string& line,
+                                      size_t expected_count,
+                                      int min_val,
+                                      int max_val,
+                                      const std::string& context) {
     std::vector<int>   result;
     std::istringstream iss(line);
     std::string        token;
@@ -69,55 +66,55 @@ ParsedData Parser::parseFile(const std::string& filename) {
     std::ifstream file(filename);
 
     if (!file) {
-        throw std::runtime_error{"Cannot open file: " + filename};
+        std::cerr << "Cannot open file: " << filename << std::endl;
+        std::exit(1);
     }
 
     ParsedData  data;
     std::string line, original;
 
-    line = readLineSafe(file, original);
-    auto mn = parseNumbers(line, 2, 1, 100, "First line (M N)");
+    try {
+        line    = readLineSafe(file, original);
+        auto mn = parseNumbers(line, 2, 1, 100, "First line (M N)");
 
-    data.M = static_cast<uint32_t>(mn[0]);
-    data.N = static_cast<uint32_t>(mn[1]);
+        data.M = static_cast<uint32_t>(mn[0]);
+        data.N = static_cast<uint32_t>(mn[1]);
 
-    data.op_times.resize(std::max(1u, data.M - 1), std::vector<Time>(data.N));
-    for (uint32_t i = 0; i < data.M - 1; ++i) {
-        line = readLineSafe(file, original);
-        auto times = parseNumbers(line, data.N, 0, 10000, "Operation times row " + std::to_string(i));
+        data.op_times.resize(std::max(1u, data.M - 1), std::vector<Time>(data.N));
+        for (uint32_t i = 0; i < data.M - 1; ++i) {
+            line       = readLineSafe(file, original);
+            auto times = parseNumbers(line, data.N, 0, 10000, "Operation times row " + std::to_string(i));
 
-        for (uint32_t j = 0; j < data.N; ++j) {
-            data.op_times[i][j] = static_cast<Time>(times[j]);
-        }
-    }
-
-    data.initial_queues.resize(data.N);
-    for (uint32_t i = 0; i < data.N; ++i) {
-        line = readLineSafe(file, original);
-        std::istringstream iss(line);
-
-        int qi;
-
-        if (!(iss >> qi) || qi < 0) {
-            throw std::runtime_error{
-                "Queue line " + std::to_string(i) + ": invalid count"
-            };
+            for (uint32_t j = 0; j < data.N; ++j) {
+                data.op_times[i][j] = static_cast<Time>(times[j]);
+            }
         }
 
-        data.initial_queues[i].reserve(qi);
-        for (int j = 0; j < qi; ++j) {
-            int type;
+        data.initial_queues.resize(data.N);
+        for (uint32_t i = 0; i < data.N; ++i) {
+            line = readLineSafe(file, original);
 
-            if (!(iss >> type) || type < 0 || type >= static_cast<int>(data.M - 1)) {
-                throw std::runtime_error{
-                    "Queue line " + std::to_string(i) + 
-                    ": invalid item type at position " + std::to_string(j)
-                };
+            std::istringstream iss(line);
+            int qi;
+
+            if (!(iss >> qi) || qi < 0) {
+                throw std::runtime_error{"Queue line " + std::to_string(i) + ": invalid count"};
             }
 
-            data.initial_queues[i].push_back(static_cast<ItemType>(type));
+            data.initial_queues[i].reserve(qi);
+            for (int j = 0; j < qi; ++j) {
+                int type;
+
+                if (!(iss >> type) || type < 0 || type >= static_cast<int>(data.M - 1)) {
+                    throw std::runtime_error{"Queue line " + std::to_string(i) + ": invalid item type at position " + std::to_string(j)};
+                }
+
+                data.initial_queues[i].push_back(static_cast<ItemType>(type));
+            }
         }
-    }  
+    } catch (...) {
+        throw std::runtime_error{original};
+    }
 
     return data;
 }
@@ -128,24 +125,11 @@ std::vector<std::unique_ptr<Item>> Parser::createItems(const ParsedData& data) {
 
     for (uint32_t i = 0; i < data.N; ++i) {
         for (ItemType type : data.initial_queues[i]) {
-            items.push_back(std::make_unique<Item>(next_id++. type));
+            items.push_back(std::make_unique<Item>(next_id++, type));
         }
     }
 
     return items;
-}
-
-void Parser::populateMachines(const ParsedData& data, 
-                              std::vector<std::unique_ptr<Item>>& items,
-                              std::vector<Machine>& machines) {
-    size_t item_idx = 0;
-
-    for (uint32_t i = 0; i < data.N; ++i) {
-        for (uint32_t j = 0; j < data.initial_queues[i].size(); ++j) {
-            machines[i].pushToQueue(items[item_idx].get());
-            ++item_idx;
-        }
-    }
 }
 
 } // namespace conveyor

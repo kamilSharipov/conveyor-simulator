@@ -15,7 +15,8 @@ public:
                       uint32_t N,
                       std::vector<std::vector<Time>> op_times);
 
-    void loadInitialItems(std::vector<std::unique_ptr<Item>> items);
+    void loadInitialState(std::vector<std::unique_ptr<Item>> items,
+                          const std::vector<std::vector<ItemType>>& initial_queues);
 
     Time run(Logger& logger);
 
@@ -42,7 +43,7 @@ private:
     size_t completed_count = 0;
     size_t total_items     = 0;
 
-    MachineId selectBestMachine(ItemType next_type, Time current_time) const;
+    MachineId selectBestMachine() const;
 
     void handleFinish(MachineId machine_id,
                       Item* item,

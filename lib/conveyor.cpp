@@ -23,13 +23,16 @@ Conveyor::Conveyor(uint32_t M,
     }
 }
 
-void Conveyor::loadInitialItems(std::vector<std::unique_ptr<Item>> items) {
-    items_      = std::move(items);
+void Conveyor::loadInitialState(std::vector<std::unique_ptr<Item>> items,
+                                const std::vector<std::vector<ItemType>>& initial_queues) {
+    items_ = std::move(items);
     total_items = items_.size();
 
+    size_t next_idx = 0;
     for (MachineId i = 0; i < N_; ++i) {
-        if (auto* item = machines_[i].popNextIfReady(0)) {
-            machines_[i].startProcessing(item, 0);
+        for (size_t j = 0; j < initial_queues[i].size(); ++j) {
+            machines_[i].pushToQueue(items_[next_idx].get());
+            ++next_idx;
         }
     }
 }
@@ -52,7 +55,7 @@ void Conveyor::handleFinish(MachineId machine_id,
     item->advanceType();
 
     ItemType  next_type = item->getCurrentType();
-    MachineId target    = selectBestMachine(next_type, finish_time);
+    MachineId target    = selectBestMachine();
 
     if (machines_[target].isIdle(finish_time)) {
         machines_[target].startProcessing(item, finish_time);
@@ -67,6 +70,21 @@ void Conveyor::handleFinish(MachineId machine_id,
         machines_[target].pushToQueue(item);
         logger.logWait(finish_time, item->getId(), next_type, target, queue_size);
     }
+}
+
+MachineId Conveyor::selectBestMachine() const {
+    MachineId best = 0;
+    Time best_wait = machines_[0].calculateWaitTime();
+
+    for (MachineId j = 1; j < N_; ++j) {
+        Time wait = machines_[j].calculateWaitTime();
+        if (wait < best_wait) {
+            best_wait = wait;
+            best = j;
+        }
+    }
+
+    return best;
 }
 
 void Conveyor::tryStartNext(MachineId machine_id, Time current_time, Logger& logger) {
@@ -86,26 +104,40 @@ Time Conveyor::run(Logger& logger) {
         tryStartNext(i, 0, logger);
     }
 
-    Time current_time = 0;
-
-    while (completed_count < total_items && !event_queue_.empty()) {
+    while (!event_queue_.empty() && event_queue_.top().time == 0) {
         auto event = event_queue_.top();
         event_queue_.pop();
+        handleFinish(event.machine_id,
+                     items_[event.item_id].get(),
+                     event.operation_type,
+                     event.time,
+                     logger);
+        tryStartNext(event.machine_id, event.time, logger);
+    }
 
-        current_time         = event.time;
-        MachineId machine_id = event.machine_id;
-        Item*     item       = items_[event.item_id].get();
+    logger.flushCurrentTime(0);
 
-        handleFinish(machine_id, item, event.operation_type, current_time, logger);
+    Time current_time = 0;
+    while (completed_count < total_items && !event_queue_.empty()) {
+        current_time = event_queue_.top().time;
 
-        tryStartNext(machine_id, current_time, logger);
+        while (!event_queue_.empty() && event_queue_.top().time == current_time) {
+            auto event = event_queue_.top();
+            event_queue_.pop();
+
+            handleFinish(event.machine_id,
+                         items_[event.item_id].get(),
+                         event.operation_type,
+                         current_time,
+                         logger);
+            tryStartNext(event.machine_id, current_time, logger);
+        }
 
         logger.flushCurrentTime(current_time);
     }
 
     logger.logStop(current_time);
     logger.flushAll();
-
     return current_time;
 }
 

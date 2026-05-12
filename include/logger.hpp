@@ -10,11 +10,11 @@ namespace conveyor {
 class Logger {
 public:
     enum class Priority {
-        FINISH = 0,
-        START  = 1,
+        STOP   = 0,
+        READY  = 1,
         WAIT   = 2,
-        READY  = 3,
-        STOP   = 4
+        START  = 3,
+        FINISH = 4
     };
 
     struct Event {
@@ -24,7 +24,7 @@ public:
 
         bool operator>(const Event& other) const {
             if (time != other.time) {
-                return time > other.time;
+                return time < other.time;
             }
 
             return static_cast<uint8_t>(priority) > static_cast<uint8_t>(other.priority);

@@ -46,8 +46,9 @@ void Logger::logStop(Time t) {
 }
 
 void Logger::flushCurrentTime(Time current_time) {
-    std::sort(buffer_.begin(), buffer_.end(), 
-              [](const Event& a, const Event& b) { return a > b; });
+    std::sort(buffer_.begin(), buffer_.end(), [](const Event& a, const Event& b) {
+        return a > b; 
+    });
 
     for (auto it = buffer_.begin(); it != buffer_.end(); ) {
         if (it->time == current_time) {

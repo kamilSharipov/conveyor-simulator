@@ -23,10 +23,6 @@ public:
 
     static std::vector<std::unique_ptr<Item>> createItems(const ParsedData& data);
 
-    static void populateMachines(const ParsedData& data, 
-                                 std::vector<std::unique_ptr<Item>>& items,
-                                 std::vector<Machine>& machines);
-
 private:
     static std::string readLineSafe(std::istream& is, std::string& original_line);
 

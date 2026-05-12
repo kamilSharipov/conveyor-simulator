@@ -16,6 +16,20 @@ target_include_directories(conv_core PUBLIC include)
 add_executable(simulator src/main.cpp)
 target_link_libraries(simulator PRIVATE conv_core)
 
+add_compile_options(-Wall -Wextra -Wpedantic)
+
+add_compile_options(
+    $<$<CONFIG:Debug>:-g>
+    $<$<CONFIG:Debug>:-O0>
+    $<$<CONFIG:Release>:-O2>
+    $<$<CONFIG:Release>:-DNDEBUG>
+    $<$<CONFIG:Release>:-march=native>
+)
+
+if(CMAKE_BUILD_TYPE STREQUAL "Release")
+    add_compile_options(-Werror)
+endif()
+
 option(BUILD_TESTING "Build tests" ON)
 if(BUILD_TESTING)
     enable_testing()

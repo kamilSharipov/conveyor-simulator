@@ -113,7 +113,8 @@ ParsedData Parser::parseFile(const std::string& filename) {
             }
         }
     } catch (...) {
-        throw std::runtime_error{original};
+        std::cerr << original << std::endl;
+        std::exit(1);
     }
 
     return data;

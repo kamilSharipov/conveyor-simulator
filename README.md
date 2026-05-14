@@ -40,7 +40,7 @@ The input file must follow the specification:
 
 First line: $M$ (number of item types) and $N$ (number of machines)
 
-Next $M - 1$ lines: matrix of operation times ($T_{i,j}$)
+Next $M - 1$ lines: matrix of operation times $(T_{i,j})$
 
 Then $N$ lines: each starts with the queue size $q_j$, followed by $q_j$ integers indicating the types of items in the initial queue
 
